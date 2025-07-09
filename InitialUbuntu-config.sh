@@ -6,6 +6,44 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+
+# Access and use GitHub token
+TOKEN_FILE="/etc/.secrets/github_token"
+
+if [[ ! -f "$TOKEN_FILE" ]]; then
+  echo " GitHub token not found at $TOKEN_FILE"
+  exit 1
+fi
+
+GIT_TOKEN=$(< "$TOKEN_FILE")
+
+# Optional: Test API access to GitHub
+echo " Testing GitHub API access with token..."
+curl -s -H "Authorization: token $GIT_TOKEN" https://api.github.com/user | grep "login"
+
+if [[ $? -ne 0 ]]; then
+  echo " GitHub token may be invalid or access is restricted."
+  exit 2
+fi
+
+echo " GitHub token is valid."
+
+# Optional: Clone a private repo using token
+# NOTE: The token must be URL-encoded if it contains special characters
+REPO_URL="https://$GIT_TOKEN@github.com/aharveyit/CityofBoulder.git"
+CLONE_DIR="/opt/CityofBoulder"
+
+echo " Cloning repo into $CLONE_DIR..."
+git clone "$REPO_URL" "$CLONE_DIR"
+
+if [[ $? -eq 0 ]]; then
+  echo " Repository cloned successfully."
+else
+  echo " Failed to clone repository. Check token and repo URL."
+fi
+
+
+
 # Prompt for new hostname
 read -p "Enter new hostname: " NEW_HOSTNAME  
 hostnamectl set-hostname "$NEW_HOSTNAME"
@@ -33,23 +71,58 @@ echo " create log file for sssd"  # notice this was not created and would erro o
 sudo mkdir -p /var/log/sssd
 
 
-# Prompt for AD domain and credentials  # no boulder.local or Cobntdomain no fqdn
-read -p "Enter AD Username: " AD_USER
-
 # Install required ad packages
 echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
 
 
-#join domain
-realm join --user=$AD_USER boulder.local
+# Prompt for AD username
+read -p "Enter AD Username: " AD_USER
+
+# Prompt for OU in DN format
+read -p "Enter target OU for this linux machine (e.g., OU=LinuxInfra,OU=Servers,DC=boulder,DC=local): " COMPUTER_OU
+
+# Allow up to 3 attempts for correct password
+MAX_ATTEMPTS=3
+attempt=1
+
+while [[ $attempt -le $MAX_ATTEMPTS ]]; do
+  read -s -p "Enter Password for $AD_USER (attempt $attempt of $MAX_ATTEMPTS): " AD_PASS
+  echo
+
+  # Try to validate credentials
+  echo "$AD_PASS" | adcli info -v --domain=boulder.local --login-user=$AD_USER --stdin-password > /dev/null 2>&1
+
+  if [[ $? -eq 0 ]]; then
+    echo "Credentials verified."
+    break
+  else
+    echo "Invalid credentials."
+    ((attempt++))
+  fi
+
+  if [[ $attempt -gt $MAX_ATTEMPTS ]]; then
+    echo "Maximum attempts reached. Exiting."
+    exit 1
+  fi
+done
+
+# Install required AD packages
+echo "Installing AD packages"
+apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
+
+# Join domain with specified OU
+echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local --stdin
 
 if [[ $? -ne 0 ]]; then
-  echo " Failed to join domain. Please check credentials and network settings."
+  echo "Failed to join domain. Please check network or domain settings."
   exit 1
 fi
 
-echo " Joined to domain: boulder.local"
+echo "Successfully joined to domain: boulder.local in OU: $COMPUTER_OU"
+
+# Clear the password from memory
+unset AD_PASS
 
 # Verify domain joined
 realm list
