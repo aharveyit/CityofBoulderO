@@ -145,7 +145,45 @@ echo "Sudoers file created for group it-sysadmin-linux"
 echo " restarting sssd"
  sudo systemctl restart sssd  # notice that a restart was needed
 
+read -p "Configure a static IP address? (y/n): " SET_STATIC
 
+#Set network Static
+if [[ "$SET_STATIC" =~ ^[Yy]$ ]]; then
+  NET_IFACE=$(ip -o -4 route show to default | awk '{print $5}')
+
+  read -p "Enter static IP address (e.g., 192.168.1.50/24): " STATIC_IP
+  read -p "Enter default gateway (e.g., 192.168.1.1): " GATEWAY
+  read -p "Enter DNS servers (comma-separated, e.g., 8.8.8.8,1.1.1.1): " DNS
+
+  NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
+  cp $NETPLAN_FILE "${NETPLAN_FILE}.bak"
+
+  cat > "$NETPLAN_FILE" <<EOF
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    $NET_IFACE:
+      dhcp4: no
+      addresses:
+        - $STATIC_IP
+      gateway4: $GATEWAY
+      nameservers:
+        addresses: [${DNS//,/ , }]
+EOF
+
+  echo "Applying new network settings..."
+  netplan apply
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to apply static IP configuration. Please check your inputs."
+    exit 1
+  else
+    echo "Static IP configuration applied to $NET_IFACE."
+  fi
+else
+  echo "Skipping static IP configuration."
+fi
 
 
 
