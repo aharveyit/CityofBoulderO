@@ -125,6 +125,9 @@ apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common
 
 sudo apt install expect -y
 
+echo "It will ask for your password again - do not enter just wait it will pass the variable through"
+
+#using Expect to stop prompt but does not seem to work need to look into
 expect <<EOF
 spawn realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
 expect "Password for $AD_USER:"
@@ -191,7 +194,9 @@ network:
       dhcp4: no
       addresses:
         - $STATIC_IP
-      gateway4: $GATEWAY
+      routes:
+        - to: 0.0.0.0/0
+          via: $GATEWAY
       nameservers:
         addresses: [${DNS//,/ , }]
 EOF
