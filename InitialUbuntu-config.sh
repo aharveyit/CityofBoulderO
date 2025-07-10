@@ -59,7 +59,6 @@ apt install network-manager -y
 echo " restarting services"
 sudo systemctl restart NetworkManager.service
 
-sudo systemctl enable NetworkManager.service
 
 echo " install nano"
 sudo apt install nano -y
@@ -116,6 +115,7 @@ while [[ $attempt -le $MAX_ATTEMPTS ]]; do
     exit 1
   fi
 done
+
 # Install required AD packages
 echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
