@@ -51,23 +51,23 @@ echo " Hostname changed to $NEW_HOSTNAME"
 
 # Installing services
 echo " Installing Ping services"
-apt install iputils-ping
+apt install iputils-ping -y
 
 echo "installing network manager" 
-apt install network-manager 
+apt install network-manager -y
 
-echo " starting services"
-sudo systemctl start NetworkManager.service 
+echo " restarting services"
+sudo systemctl restart NetworkManager.service
 
 sudo systemctl enable NetworkManager.service
 
 echo " install nano"
-sudo apt install nano
+sudo apt install nano -y
 
 echo "install vm tools"
 sudo apt install open-vm-tools –y
 
-echo " create log file for sssd"  # notice this was not created and would erro out
+echo " create log file for sssd"  # notice this was not created and would error out
 sudo mkdir -p /var/log/sssd
 
 
@@ -86,27 +86,32 @@ read -p "Enter target OU for this linux machine (e.g., OU=LinuxInfra,OU=Servers,
 MAX_ATTEMPTS=3
 attempt=1
 
+MAX_ATTEMPTS=3
+attempt=1
+
+# Prompt for AD username
+read -p "Enter AD Username: " AD_USER
+
+# Loop starts here
 while [[ $attempt -le $MAX_ATTEMPTS ]]; do
   read -s -p "Enter Password for $AD_USER (attempt $attempt of $MAX_ATTEMPTS): " AD_PASS
   echo
 
-  # Try to validate credentials
-  echo "$AD_PASS" | adcli info -v --domain=boulder.local --login-user=$AD_USER --stdin-password > /dev/null 2>&1
+  echo '$AD_PASS' | adcli info -v --domain=boulder.local --login-user="$AD_USER" --stdin-password > /dev/null 2>&1
 
   if [[ $? -eq 0 ]]; then
-    echo "Credentials verified."
+    echo "✅ Credentials verified."
     break
   else
-    echo "Invalid credentials."
+    echo "❌ Invalid credentials."
     ((attempt++))
   fi
 
   if [[ $attempt -gt $MAX_ATTEMPTS ]]; then
-    echo "Maximum attempts reached. Exiting."
+    echo "🚫 Maximum attempts reached. Exiting."
     exit 1
   fi
 done
-
 # Install required AD packages
 echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
