@@ -121,7 +121,7 @@ echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
 
 # Join domain with specified OU
-echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local --stdin
+echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
 
 if [[ $? -ne 0 ]]; then
   echo "Failed to join domain. Please check network or domain settings."
