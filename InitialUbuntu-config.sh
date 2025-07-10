@@ -121,19 +121,13 @@ echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
 
 # Join domain with specified OU
-#echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
 
-sudo apt install expect -y
-
+echo " Joining Domain "
+echo
 echo "It will ask for your password again - do not enter just wait it will pass the variable through"
 
-#using Expect to stop prompt but does not seem to work need to look into
-expect <<EOF
-spawn realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
-expect "Password for $AD_USER:"
-send "$AD_PASS\r"
-expect eof
-EOF
+echo
+echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
 
 if [[ $? -ne 0 ]]; then
   echo "Failed to join domain. Please check network or domain settings."
@@ -146,6 +140,7 @@ echo "Successfully joined to domain: boulder.local in OU: $COMPUTER_OU"
 unset AD_PASS
 
 # Verify domain joined
+echo "verify domain join"
 realm list
 
 
@@ -178,12 +173,18 @@ if [[ "$SET_STATIC" =~ ^[Yy]$ ]]; then
 
   NETPLAN_FILE="/etc/netplan/50-cloud-init.yaml"
 
+echo " customing config file"
+echo
   # Backup and remove the old netplan config
   if [[ -f "$NETPLAN_FILE" ]]; then
     cp "$NETPLAN_FILE" "${NETPLAN_FILE}.bak"
     rm "$NETPLAN_FILE"
   fi
 
+echo " you will need to check the vm and update the vm's network adapter"
+echo 
+echo " ****** just about done when you notice the screen getting stuck, that means the netwrk config has updated ******"
+echo
   # Create new netplan config
   cat > "$NETPLAN_FILE" <<EOF
 network:
