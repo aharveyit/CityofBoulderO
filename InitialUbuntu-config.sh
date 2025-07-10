@@ -77,38 +77,42 @@ apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common
 
 
 # Prompt for AD username
-read -p "Enter AD Username: " AD_USER
+#read -p "Enter AD Username: " AD_USER
 
 # Prompt for OU in DN format
 read -p "Enter target OU for this linux machine (e.g., OU=LinuxInfra,OU=Servers,DC=boulder,DC=local): " COMPUTER_OU
 
 # Allow up to 3 attempts for correct password
-MAX_ATTEMPTS=3
-attempt=1
 
 MAX_ATTEMPTS=3
 attempt=1
+LDAP_SERVER="msdc20.boulder.local"
+AD_DOMAIN="boulder.local"
 
-# Prompt for AD username
 read -p "Enter AD Username: " AD_USER
 
-# Loop starts here
 while [[ $attempt -le $MAX_ATTEMPTS ]]; do
-  read -s -p "Enter Password for $AD_USER (attempt $attempt of $MAX_ATTEMPTS): " AD_PASS
+  read -s -p "Enter Password for $AD_USER@$AD_DOMAIN (attempt $attempt of $MAX_ATTEMPTS): " AD_PASS
   echo
 
-  echo '$AD_PASS' | adcli info -v --domain=boulder.local --login-user="$AD_USER" --stdin-password > /dev/null 2>&1
+  # Define the command in a variable
+  LDAP_CMD="ldapwhoami -x -D \"$AD_USER@$AD_DOMAIN\" -w \"$AD_PASS\" -H ldap://$LDAP_SERVER"
 
-  if [[ $? -eq 0 ]]; then
-    echo "✅ Credentials verified."
+  # Run the command and capture output
+  OUTPUT=$(eval "$LDAP_CMD" 2>/dev/null)
+
+  # Check if output contains the username
+  if echo "$OUTPUT" | grep -qi "$AD_USER"; then
+    echo " Credentials verified. Output: $OUTPUT"
+    #unset AD_PASS
     break
   else
-    echo "❌ Invalid credentials."
+    echo " Invalid credentials or unexpected output."
     ((attempt++))
   fi
 
   if [[ $attempt -gt $MAX_ATTEMPTS ]]; then
-    echo "🚫 Maximum attempts reached. Exiting."
+    echo " Maximum attempts reached. Exiting."
     exit 1
   fi
 done
