@@ -47,6 +47,7 @@ fi
 # Prompt for new hostname
 read -p "Enter new hostname: " NEW_HOSTNAME  
 hostnamectl set-hostname "$NEW_HOSTNAME"
+echo
 echo " Hostname changed to $NEW_HOSTNAME"
 
 # Installing services
@@ -202,10 +203,10 @@ network:
         addresses: [${DNS//,/ , }]
 EOF
 
-echo "****** applying permission to new file ******"
+echo "****** applying permission to the new file ******"
 echo
 chmod 600 "$NETPLAN_FILE"
-echo "***** Applying new network settings... session will end if no errors. Check your VM's network ******"
+echo "***** You made it through! Applying new network settings... session will end if no errors. Check your VM's network ******"
   netplan apply
 
   if [[ $? -ne 0 ]]; then
