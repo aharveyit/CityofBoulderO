@@ -53,11 +53,11 @@ echo " Hostname changed to $NEW_HOSTNAME"
 echo " Installing Ping services"
 apt install iputils-ping -y
 
-echo "installing network manager" 
-apt install network-manager -y
+#echo "installing network manager" 
+#apt install network-manager -y
 
-echo " restarting services"
-sudo systemctl restart NetworkManager.service
+#echo " restarting services"
+#sudo systemctl restart NetworkManager.service
 
 
 echo " install nano"
