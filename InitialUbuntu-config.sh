@@ -121,7 +121,16 @@ echo "Installing AD packages"
 apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common-bin packagekit
 
 # Join domain with specified OU
-echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
+#echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
+
+sudo apt install expect -y
+
+expect <<EOF
+spawn realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
+expect "Password for $AD_USER:"
+send "$AD_PASS\r"
+expect eof
+EOF
 
 if [[ $? -ne 0 ]]; then
   echo "Failed to join domain. Please check network or domain settings."
@@ -164,9 +173,15 @@ if [[ "$SET_STATIC" =~ ^[Yy]$ ]]; then
   read -p "Enter default gateway (e.g., 192.168.1.1): " GATEWAY
   read -p "Enter DNS servers (comma-separated, e.g., 8.8.8.8,1.1.1.1): " DNS
 
-  NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
-  cp $NETPLAN_FILE "${NETPLAN_FILE}.bak"
+  NETPLAN_FILE="/etc/netplan/50-cloud-init.yaml"
 
+  # Backup and remove the old netplan config
+  if [[ -f "$NETPLAN_FILE" ]]; then
+    cp "$NETPLAN_FILE" "${NETPLAN_FILE}.bak"
+    rm "$NETPLAN_FILE"
+  fi
+
+  # Create new netplan config
   cat > "$NETPLAN_FILE" <<EOF
 network:
   version: 2
