@@ -124,7 +124,7 @@ apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common
 
 echo " Joining Domain "
 echo
-echo "It will ask for your password again - do not enter just wait it will pass the variable through"
+echo "****** It will ask for your password again - do not enter just wait it will pass the variable through ******"
 
 echo
 echo "$AD_PASS" | realm join --user="$AD_USER" --computer-ou="$COMPUTER_OU" boulder.local
@@ -158,7 +158,7 @@ echo "%boulder.local\\SG-LinuxAdmin ALL=(ALL) ALL" | sudo tee /etc/sudoers.d/dom
 echo "%SG-LinuxAdmin ALL=(ALL) ALL" | sudo tee /etc/sudoers.d/domainadmins # creates the file SG-Linuxadmin then adds the AD group
 sudo chmod 440 /etc/sudoers.d/domainadmins
 echo "Sudoers file created for group it-sysadmin-linux"
-echo " restarting sssd"
+echo " restarting sssd "
  sudo systemctl restart sssd  # notice that a restart was needed
 
 read -p "Configure a static IP address? (y/n): " SET_STATIC
@@ -181,9 +181,9 @@ echo
     rm "$NETPLAN_FILE"
   fi
 
-echo " you will need to check the vm and update the vm's network adapter"
+echo " ****** Reminder you will need to check the vm and update the vm's network adapter ******"
 echo 
-echo " ****** just about done when you notice the screen getting stuck, that means the netwrk config has updated ******"
+echo " ****** just about done when you notice the screen is stuck, that means the network config has updated ******"
 echo
   # Create new netplan config
   cat > "$NETPLAN_FILE" <<EOF
@@ -202,7 +202,10 @@ network:
         addresses: [${DNS//,/ , }]
 EOF
 
-  echo "Applying new network settings..."
+echo "****** applying permission to new file ******"
+echo
+chmod 600 "$NETPLAN_FILE"
+echo "***** Applying new network settings... session will end if no errors. Check your VM's network ******"
   netplan apply
 
   if [[ $? -ne 0 ]]; then
