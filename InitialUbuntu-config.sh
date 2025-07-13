@@ -200,6 +200,7 @@ network:
         - to: 0.0.0.0/0
           via: $GATEWAY
       nameservers:
+		search: [boulder.local]
         addresses: [${DNS//,/ , }]
 EOF
 
@@ -207,7 +208,8 @@ echo "****** applying permission to the new file ******"
 echo
 chmod 600 "$NETPLAN_FILE"
 echo "***** You made it through! Applying new network settings... session will end if no errors. Check your VM's network ******"
-  netplan apply
+  sudo systemctl restart systemd-resolved
+  sudo netplan apply
 
   if [[ $? -ne 0 ]]; then
     echo "Failed to apply static IP configuration. Please check your inputs."
