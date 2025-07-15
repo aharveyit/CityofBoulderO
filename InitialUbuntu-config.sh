@@ -191,7 +191,7 @@ network:
         - to: 0.0.0.0/0
           via: $GATEWAY
       nameservers:
-	search: [boulder.local]
+        search: [boulder.local]
         addresses: [${DNS//,/ , }]
 EOF
 
