@@ -73,14 +73,38 @@ read -p "Enter target OU for this linux machine (e.g., OU=LinuxInfra,OU=Servers,
 
 # Allow up to 3 attempts for correct password
 
-#MAX_ATTEMPTS=3
-#attempt=1
-#DAP_SERVER="msdc20.boulder.local"
-#AD_DOMAIN="boulder.local"
+MAX_ATTEMPTS=3
+attempt=1
+LDAP_SERVER="msdc20.boulder.local"
+AD_DOMAIN="boulder.local"
 
 read -p "Enter AD Username: " AD_USER
 
+while [[ $attempt -le $MAX_ATTEMPTS ]]; do
+  read -s -p "Enter Password for $AD_USER@$AD_DOMAIN (attempt $attempt of $MAX_ATTEMPTS): " AD_PASS
+  echo
 
+  # Define the command in a variable
+  LDAP_CMD="ldapwhoami -x -D \"$AD_USER@$AD_DOMAIN\" -w \"$AD_PASS\" -H ldap://$LDAP_SERVER"
+
+  # Run the command and capture output
+  OUTPUT=$(eval "$LDAP_CMD" 2>/dev/null)
+
+  # Check if output contains the username
+  if echo "$OUTPUT" | grep -qi "$AD_USER"; then
+    echo " Credentials verified. Output: $OUTPUT"
+    #unset AD_PASS
+    break
+  else
+    echo " Invalid credentials or unexpected output."
+    ((attempt++))
+  fi
+
+  if [[ $attempt -gt $MAX_ATTEMPTS ]]; then
+    echo " Maximum attempts reached. Exiting."
+    exit 1
+  fi
+done
 
 # Install required AD packages
 echo "Installing AD packages"
@@ -167,7 +191,7 @@ network:
         - to: 0.0.0.0/0
           via: $GATEWAY
       nameservers:
-        search: [boulder.local]
+	search: [boulder.local]
         addresses: [${DNS//,/ , }]
 EOF
 
