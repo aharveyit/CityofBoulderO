@@ -17,19 +17,8 @@ fi
 
 GIT_TOKEN=$(< "$TOKEN_FILE")
 
-# Optional: Test API access to GitHub
-echo " Testing GitHub API access with token..."
-curl -s -H "Authorization: token $GIT_TOKEN" https://api.github.com/user | grep "login"
 
-if [[ $? -ne 0 ]]; then
-  echo " GitHub token may be invalid or access is restricted."
-  exit 2
-fi
-
-echo " GitHub token is valid."
-
-# Optional: Clone a private repo using token
-# NOTE: The token must be URL-encoded if it contains special characters
+# NOTE: The token must be URL encoded if it contains special characters
 REPO_URL="https://$GIT_TOKEN@github.com/aharveyit/CityofBoulder.git"
 CLONE_DIR="/opt/CityofBoulder"
 
@@ -123,7 +112,9 @@ apt install -y realmd sssd sssd-tools oddjob oddjob-mkhomedir adcli samba-common
 
 # Join domain with specified OU
 
-echo " Joining Domain "
+echo
+echo
+echo " ******Joining Domain****** "
 echo
 echo "****** It will ask for your password again - do not enter just wait it will pass the variable through ******"
 
